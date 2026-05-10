@@ -35,6 +35,7 @@ Read the user's request and classify it into one of the intent categories below.
 | `deploy` | deploy, ship, push to production, push to test, release, new app, create app, new heroku, bootstrap app |
 | `validate` | validate deployment, check deployment, is it live, health check |
 | `landing-page` | landing page, LP, static landing, deploy to AWS (static/S3/CloudFront), paid-social landing page, TikTok Pixel, Meta CAPI, Events API, EMQ, IAB / WebView / WKWebView, pixel proxy, CloudWatch RUM, "make this ready for Meta/TikTok/Google Ads traffic", pixel integration, design LP, build landing page, upload to S3, provision bucket, CloudFront distribution, buy domain |
+| `mkt-ticket` | MKT-NNN, jira mkt, pickup ticket, work ticket, mkt ticket, transition ticket, file mkt, close mkt, drift bug |
 | `dev-implementation` | develop AND test AND deploy in one request, "build and ship", "implement and deploy" |
 
 ---
@@ -132,6 +133,42 @@ Load `heroku-cloud` for log analysis and HTTP health check.
 
 ---
 
+### `mkt-ticket`
+**Pipeline:** radview-mkt-jira → CONVENTION.md hard constraints → conditional radview skills → dev-implementation
+
+```
+→ skills/radview-mkt-jira/SKILL.md          (Step 0: pickup, audience, ADR check, transition trap)
+→ glob CONVENTION.md                         (Step 0.5: hard constraints from project facts)
+→ skills/radview-supabase-migration/SKILL.md (only if SQL/DDL is in scope)
+→ skills/radview-vercel-preview-verify/SKILL.md (only if UI/handler is in scope)
+→ skills/code-implementation/SKILL.md
+→ skills/tests-implementation/SKILL.md
+→ agents/swe-linter.md
+→ agents/swe-tester-agent.md
+→ skills/swe-documentation/SKILL.md
+```
+
+**Pipeline rules:**
+
+1. **Step 0 — Jira pickup:** Read MKT-NNN. Verify scope. Determine audience (customer/operator/engineer/infra) per MKT-392. Check whether ADR is required per MKT-396. Comment plan in ADF (paragraph-wrapped). Transition to In Progress (verify destination via transitions endpoint — names lie, IDs lie, only `to.name` truths).
+
+2. **Step 0.5 — CONVENTION.md hard constraints:** Glob `**/CONVENTION.md`. Treat §3 (canonical values) as hard constraints. If the ticket touches drift-prone columns (§3.2), role enum (§3.1), or RPCs (§3.3), confirm canonical names BEFORE writing any code.
+
+3. **Step 1 — Supabase (conditional):** If the ticket involves CREATE TABLE / ALTER TABLE / CREATE FUNCTION / CREATE VIEW / registry seed, load `radview-supabase-migration`. Encodes Step 0 schema-verify (information_schema query), DROP+CREATE for view-shape changes, run-migration.yml flow, idempotency, registry-row coupling, owner-field rule.
+
+4. **Step 2 — Preview verification (conditional):** If the ticket affects `dashboard/src/admin/*`, `dashboard/src/<tenantSlug>/*`, or `dashboard/api/*` returning user-visible JSON, load `radview-vercel-preview-verify`. Operator login + before/after screenshot ritual + API+data verify steps.
+
+5. **Steps 3–7 — Standard dev cycle:** Same gates as `dev-implementation` (lint must pass before tests, tests must pass before docs).
+
+6. **Closing:** Verify per CONVENTION.md §8 Definition of Done. Comment closing on the MKT ticket with verification artifact (screenshot URL, API result, cron-tick result, etc.). Transition to Done via id=5 direct (NEVER via "Approved" — triggers agent automation loop). Append entry to ROUTER_AUDIT.md.
+
+**Gates:**
+- Do not proceed past Step 0.5 if a drift-prone column from CONVENTION.md §3.2 was referenced by its wrong name in the ticket framing — flag and re-scope first.
+- Do not transition to Done without the verification artifact.
+- Never transition through "Approved" status; use id=5 direct.
+
+---
+
 ### `dev-implementation`
 **Full Development Pipeline:** code-implementation → tests-implementation → swe-linter → swe-tester-agent → swe-documentation
 **Critical:** For all code generation tasks or feature implementation use the dev-implementation cycle.
@@ -196,6 +233,7 @@ router:
     deploy:             [skills/heroku-cloud/SKILL.md]
     validate:           [skills/heroku-cloud/SKILL.md]
     landing-page:       [agents/lp-designer.md, skills/paid-social-landing-pages/SKILL.md, agents/aws-s3-provisioner.md, agents/aws-cloudfront-domain.md]
+    mkt-ticket:         [skills/radview-mkt-jira/SKILL.md, skills/radview-supabase-migration/SKILL.md, skills/radview-vercel-preview-verify/SKILL.md, skills/code-implementation/SKILL.md, skills/tests-implementation/SKILL.md, agents/swe-linter.md, agents/swe-tester-agent.md, skills/swe-documentation/SKILL.md]
     dev-implementation: [skills/code-implementation/SKILL.md, skills/tests-implementation/SKILL.md, agents/swe-linter.md, agents/swe-tester-agent.md, skills/swe-documentation/SKILL.md]
   gates:
     - after: swe-linter → before: swe-tester-agent (lint + typecheck must pass)

@@ -1,9 +1,10 @@
 {
   "name": "swe-plugin",
-  "version": "1.1.0",
-  "description": "Provides all-in-one orchestration, development, testing, validation, deployments, system design, planning, and architecture documentation",
+  "version": "2.0.0-radview",
+  "description": "Forked from eymass/swe-plugin@v1.1.0. Adds three radview-specific skills (radview-supabase-migration, radview-vercel-preview-verify, radview-mkt-jira) and an mkt-ticket router intent. See FORK.md for the divergence policy and pull-from-upstream procedure.",
   "author": {
-    "name": "eymas"
+    "name": "Firas Matar (RadView)",
+    "upstream": "eymas / eymass/swe-plugin"
   },
   "agents": [
     "./agents/swe-planner.md",
